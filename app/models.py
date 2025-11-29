@@ -1,5 +1,12 @@
 from pydantic import BaseModel, Field
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, List, Any
+
+#targetType and targetId Optional because they are often null in C#.
+class Affinity(BaseModel):
+    tag: Optional[str] = ""
+    value: Optional[int] = 0
+    targetType: Optional[str] = None
+    targetId: Optional[str] = None
 
 # Even though we dont need all for the PDF, we must match the JSON structure
 # sent by the backend to avoid validation errors.
@@ -8,6 +15,17 @@ class ReferenceData(BaseModel):
     id: str = ""
     name: str = ""
     description: Optional[str] = ""
+    # Added optional fields to handle extra data sent by C# backend without crashing
+    tags: Optional[List[str]] = None
+    affinities: Optional[List[Affinity]] = None
+
+# Merits and Flaws sent by backend
+class TraitData(BaseModel):
+    id: str = ""
+    name: str = ""
+    cost: Optional[int] = 0
+    description: Optional[str] = ""
+    affinities: Optional[List[Affinity]] = None
 
 # Mirrors the structure of the C# 'Character' class.
 class CharacterRequest(BaseModel):
@@ -41,6 +59,11 @@ class CharacterRequest(BaseModel):
     # Trackers
     humanity: int = Field(default=7, ge=0, le=10)
     willpower: int = Field(default=6, ge=0, le=10)
+
+    # Lists (Merits/Flaws)
+    # Added to prevent validation errors when C# sends these lists
+    merits: Optional[List[TraitData]] = None
+    flaws: Optional[List[TraitData]] = None
 
     class Config:
         # Example
