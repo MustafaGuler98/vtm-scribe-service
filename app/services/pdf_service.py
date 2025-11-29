@@ -138,6 +138,20 @@ class PdfService:
                 other_lines.append(f"{name.title().replace('_', ' ')}: {val}")
             other_lines.append("")
 
+        merits = char_data.get("merits", [])
+        if merits:
+            other_lines.append("--- Merits ---")
+            for merit in merits:
+                other_lines.append(f"{merit.get('name', 'Unknown')}: {merit.get('cost', 0)} pts")
+            other_lines.append("")
+
+        flaws = char_data.get("flaws", [])
+        if flaws:
+            other_lines.append("--- Flaws ---")
+            for flaw in flaws:
+                other_lines.append(f"{flaw.get('name', 'Unknown')}: {flaw.get('cost', 0)} pts")
+            other_lines.append("")
+
         # Map the lines to specific PDF fields (misc1, misc2... misc13)
         for i, line in enumerate(other_lines):
             if i < 13: # The sheet has approximately 13 misc lines
