@@ -33,18 +33,23 @@ async def generate_pdf(character: CharacterRequest):
         
         # Convert Pydantic model to dict for processing
         char_data = character.model_dump()
-        
         pdf_stream = pdf_service.generate_character_stream(char_data)
-        
+        pdf_size = pdf_stream.getbuffer().nbytes
+
         # Create a safe filename
         safe_name = character.name.replace(" ", "_") if character.name else "Character"
         filename = f"{safe_name}_Sheet.pdf"
+
+        headers = {
+            "Content-Disposition": f"attachment; filename={filename}",
+            "Content-Length": str(pdf_size)
+        }
         
         # Return the stream directly. No disk storage used.
         return StreamingResponse(
             pdf_stream, 
             media_type="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
+            headers=headers
         )
 
     except FileNotFoundError as e:
