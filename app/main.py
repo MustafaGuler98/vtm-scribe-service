@@ -14,12 +14,18 @@ app = FastAPI(
 
 # --- CORS CONFIGURATION ---
 # This is crucial for allowing the browser to communicate directly with this service.
+# We must explicitly list all domains that are allowed to make requests.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://elysium.mustafaguler.me"], 
+    allow_origins=[
+        "https://elysium.mustafaguler.me", # Production domain
+        "http://localhost:5000",           # Local development
+        "http://127.0.0.1:5000"            # Local development (alternative)
+    ],
     allow_credentials=True,
-    allow_methods=["https://elysium.mustafaguler.me"],
-    allow_headers=["https://elysium.mustafaguler.me"],
+  
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
