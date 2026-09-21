@@ -1,34 +1,50 @@
-from pydantic import BaseModel, Field
-from typing import Dict, Optional, List, Any
+from typing import Dict, List, Optional
 
-#targetType and targetId Optional because they are often null in C#.
-class Affinity(BaseModel):
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class RequestModel(BaseModel):
+    # The PDF service is a tolerant consumer so older and newer Elysium payloads remain compatible.
+    model_config = ConfigDict(extra="ignore")
+
+
+class Affinity(RequestModel):
     tag: Optional[str] = ""
     value: Optional[int] = 0
     targetType: Optional[str] = None
     targetId: Optional[str] = None
 
-# Even though we dont need all for the PDF, we must match the JSON structure
-# sent by the backend to avoid validation errors.
-# If you use another source to fill the pdf, change below.
-class ReferenceData(BaseModel):
-    id: str = ""
-    name: str = ""
-    description: Optional[str] = ""
-    # Added optional fields to handle extra data sent by C# backend without crashing
-    tags: Optional[List[str]] = None
-    affinities: Optional[List[Affinity]] = None
 
-# Merits and Flaws sent by backend
-class TraitData(BaseModel):
+class ReferenceData(RequestModel):
     id: str = ""
     name: str = ""
-    cost: Optional[int] = 0
     description: Optional[str] = ""
-    affinities: Optional[List[Affinity]] = None
+    tags: Optional[List[str]] = Field(default_factory=list)
+    affinities: Optional[List[Affinity]] = Field(default_factory=list)
+
+
+class ClanData(ReferenceData):
+    nickname: Optional[str] = ""
+    disciplines: Optional[List[str]] = Field(default_factory=list)
+    weakness: Optional[str] = ""
+
+
+class TraitData(ReferenceData):
+    cost: Optional[int] = 0
+    rarity: Optional[int] = 3
+    conflictingTraits: Optional[List[str]] = Field(default_factory=list)
+
+
+class MeritData(TraitData):
+    pass
+
+
+class FlawData(TraitData):
+    pass
+
 
 # Mirrors the structure of the C# 'Character' class.
-class CharacterRequest(BaseModel):
+class CharacterRequest(RequestModel):
     name: str = Field(default="Unknown Kindred", description="The name of the character.")
     player: Optional[str] = Field(default="", description="The name of the player.")
     chronicle: Optional[str] = Field(default="", description="The name of the chronicle.")
@@ -36,7 +52,7 @@ class CharacterRequest(BaseModel):
     
     # Nested Objects
     concept: Optional[ReferenceData] = None
-    clan: Optional[ReferenceData] = None
+    clan: Optional[ClanData] = None
     nature: Optional[ReferenceData] = None
     demeanor: Optional[ReferenceData] = None
     
@@ -48,6 +64,7 @@ class CharacterRequest(BaseModel):
     maximumBloodPool: int = 10
     totalExperience: int = 0
     spentExperience: int = 0
+    maxTraitRating: int = 5
     
     # Dictionary Mappings
     attributes: Dict[str, int] = Field(default_factory=dict)
@@ -62,17 +79,24 @@ class CharacterRequest(BaseModel):
 
     # Lists (Merits/Flaws)
     # Added to prevent validation errors when C# sends these lists
-    merits: Optional[List[TraitData]] = None
-    flaws: Optional[List[TraitData]] = None
+    merits: Optional[List[MeritData]] = Field(default_factory=list)
+    flaws: Optional[List[FlawData]] = Field(default_factory=list)
+    debugLog: Optional[List[str]] = Field(default_factory=list)
 
-    class Config:
-        # Example
-        json_schema_extra = {
+    model_config = ConfigDict(
+        extra="ignore",
+        json_schema_extra={
             "example": {
                 "name": "Theo Bell",
                 "player": "Justin",
                 "chronicle": "Nights of Prophecy",
-                "clan": {"id": "brujah", "name": "Brujah"},
+                "clan": {
+                    "id": "brujah",
+                    "name": "Brujah",
+                    "nickname": "Rabble",
+                    "disciplines": ["celerity", "potence", "presence"],
+                    "weakness": "Difficulties to resist frenzy are increased by two."
+                },
                 "nature": {"id": "rebel", "name": "Rebel"},
                 "demeanor": {"id": "soldier", "name": "Soldier"},
                 "generation": 9,
@@ -82,4 +106,5 @@ class CharacterRequest(BaseModel):
                 "humanity": 7,
                 "willpower": 6
             }
-        }
+        },
+    )
