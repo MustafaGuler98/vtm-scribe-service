@@ -1,10 +1,13 @@
 import os
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
-from fastapi.middleware.cors import CORSMiddleware
-from app.models import CharacterRequest
-from app.services.pdf_service import PdfService
 import time
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
+
+from app.models import CharacterRequest
+from app.rate_limiter import FixedWindowRateLimiter, resolve_client_ip
+from app.services.pdf_service import PdfService
 
 app = FastAPI(
     title="Elysium PDF Service",
@@ -31,6 +34,13 @@ app.add_middleware(
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_PATH = os.path.join(BASE_DIR, "assets", "fillable_v20.pdf")
 
+# Vercel serverless instances do not share memory, so this limiter intentionally
+# provides lightweight abuse protection per warm instance rather than a global quota.
+pdf_rate_limiter = FixedWindowRateLimiter(
+    permit_limit=10,
+    window_seconds=60,
+)
+
 @app.get("/")
 def read_root():
     """
@@ -39,11 +49,23 @@ def read_root():
     return {"status": "active", "service": "Elysium PDF Service"}
 
 @app.post("/generate-pdf", response_class=StreamingResponse)
-async def generate_pdf(character: CharacterRequest):
+async def generate_pdf(request: Request, character: CharacterRequest):
     """
     Generates a filled PDF and streams it directly to the client.
     Using chunked transfer encoding to improve Time-To-First-Byte (TTFB).
     """
+    rate_limit_decision = pdf_rate_limiter.try_acquire(resolve_client_ip(request))
+    if not rate_limit_decision.allowed:
+        return JSONResponse(
+            status_code=429,
+            content={
+                "detail": "Too many PDF generation requests. Please try again later."
+            },
+            headers={
+                "Retry-After": str(rate_limit_decision.retry_after_seconds),
+            },
+        )
+
     start_time = time.time()
     try:
         print(f"[LOG] Generation started for character: {character.name}")

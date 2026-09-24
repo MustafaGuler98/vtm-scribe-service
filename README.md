@@ -13,6 +13,12 @@ Accepts a character object and streams back a filled PDF file.
 *   **Input:** JSON (Character Data)
 *   **Output:** `application/pdf` (Streamed)
 
+### Rate Limiting
+
+`POST /generate-pdf` accepts up to 10 requests per client IP in a 60-second window. Requests over the limit receive `429 Too Many Requests` with a `Retry-After` header. The health endpoint is not rate limited.
+
+The limiter is stored in memory and applies independently to each warm Vercel serverless instance. It provides lightweight abuse protection, not a globally shared quota across every instance.
+
 ## 🛠 Extensibility & Usage
 
 While this service is tailored for Project Elysium, the core logic in `pdf_service.py` is generic. Developers can fork this repository to build their own auto-fillers for Mr.Gone's character sheets. 
