@@ -21,9 +21,10 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://elysium.mustafaguler.me", # Production domain
-        "http://localhost:5000",           # Local development
-        "http://127.0.0.1:5000"            # Local development (alternative)
+        "https://elysium.zarcanist.com",    # Canonical production domain
+        "https://elysium.mustafaguler.me",  # Legacy production domain retained for rollback
+        "http://localhost:5000",            # Local development
+        "http://127.0.0.1:5000"             # Local development (alternative)
     ],
     allow_credentials=True,
   

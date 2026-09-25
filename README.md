@@ -39,4 +39,4 @@ A huge thank you to **Mr. Gone** for his legendary work in creating the definiti
 
 ## 🔗 Related Project
 
-This is the backend service for the main application: [Elysium](https://elysium.mustafaguler.me)
+This is the backend service for the main application: [Elysium](https://elysium.zarcanist.com)
